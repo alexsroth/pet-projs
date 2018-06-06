@@ -216,10 +216,10 @@
         let tempLon = genRand(-124.848974,-66.885444,6);
         let tempLat = genRand(24.396308,49.384358,6);
         let key = username.substring(0,2)+ Math.random()
-        let sqlQ = 'INSERT INTO hackartovl_rand (the_geom,name,key) VALUES (cdb_latlng('+tempLat+','+tempLon+'),\''+username+'\',\''+key+'\')'
+        let sqlInsert = 'INSERT INTO hackartovl_rand (the_geom,name,key) VALUES (cdb_latlng('+tempLat+','+tempLon+'),\''+username+'\',\''+key+'\')'
+        let sqlCheck = 'SELECT ST_INTERSECTS(a.the_geom,b.the_geom) FROM hackartovl_rand a, hackartovl_counties WHERE key=\''+key+'\''
 
-        //this next part I dont think is right
-        $.getJSON('https://'+cartouser+'.carto.com/api/v2/sql?q='+sqlQ+'&api_key='+apiKey,function(data){
+        $.getJSON('https://'+cartouser+'.carto.com/api/v2/sql?q='+sqlInsert+'&api_key='+apiKey,function(data){
         });
 
       }
