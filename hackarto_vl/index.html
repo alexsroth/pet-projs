@@ -133,40 +133,40 @@
               </div>
             </div>
 
-            <div class="card text-white bg-dark mb-3">
-              <h2 class="card-header">Rankings</h2>
-              <div class="card-body">
-                <div class="table-responsive">
-                  <table class="table table-striped table-dark">
-                    <thead>
-                      <tr>
-                        <th scope="col">#</th>
-                        <th scope="col">Name</th>
-                        <th scope="col">Time</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <th scope="row">1</th>
-                        <td>Alex</td>
-                        <td>00:00:22</td>
-                      </tr>
-                      <tr>
-                        <th scope="row">2</th>
-                        <td>Alex</td>
-                        <td>00:00:30</td>
-                      </tr>
-                      <tr>
-                        <th scope="row">3</th>
-                        <td>Alex</td>
-                        <td>00:00:57</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+          </div>
+
+          <div id="ranking" style="display:block" class="card text-white bg-dark mb-3">
+            <h2 class="card-header">Rankings</h2>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-striped table-dark">
+                  <thead>
+                    <tr>
+                      <th scope="col">#</th>
+                      <th scope="col">Name</th>
+                      <th scope="col">Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">1</th>
+                      <td>Alex</td>
+                      <td>00:00:22</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">2</th>
+                      <td>Alex</td>
+                      <td>00:00:30</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">3</th>
+                      <td>Alex</td>
+                      <td>00:00:57</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
-
           </div>
 
           <div id="quit" style="display:none">
@@ -178,7 +178,7 @@
                     <div class="input-group mb-3">
                       <input type="text" readonly class="form-control" id="quitDialog" >
                       <div class="input-group-append">
-                        <button class="btn btn-outline-warning" type="button" onclick="quitGame()">Quit Game</button>
+                        <button class="btn btn-outline-warning" type="button" onclick="quitGame()" id="quitButton">Quit Game</button>
                       </div>
                     </div>
                   </div>
@@ -191,7 +191,13 @@
               <div class="card-body">
                 <timerr class="bigg">Loading</timerr>
                 <div id="stopwatch" class="bigg"></div>
+              </div>
             </div>
+
+            <div class="card text-white bg-dark mb-3">
+              <div class="card-body">
+                <div id="results" class="bigg"></div>
+              </div>
             </div>
 
           </div>
@@ -209,7 +215,6 @@
       </div>
 
     </div>
-
 
     <script>
 
@@ -231,32 +236,74 @@
         apiKey: apiKey
       });
 
-
-
       var username = '';
       // var source ='';
       // var viz ='';
       var layer='';
       var myKey='';
+      const delay = 20;
 
+      const winViz = new carto.Viz(`
+       color: opacity(ramp($heat,PinkYl),1)
+       strokeColor: opacity(ramp($heat,PinkYl),.2)
+       strokeWidth: .4
+
+     `);
 
       function loadMap(key){
          const source = new carto.source.SQL('SELECT a.*, (ST_distance(a.the_geom,b.the_geom)/c.heatlamp)*2.3 as heat FROM hackartovl_counties a, hackartovl_rand b, (select MAX(ST_distance(a.the_geom,b.the_geom)) as heatlamp from hackartovl_counties a, hackartovl_rand b) c WHERE b.cartodb_id = (select MAX(cartodb_id) from hackartovl_rand)');
 
-         const viz = new carto.Viz(`
-          color: opacity(ramp($heat,[#C75DAB,#D691C1,#E4C1D9,#F1F1F1,#A7D3D4,#42B7B9,#009B9E]),1)
+         const vizHeat = new carto.Viz(`
+          color: opacity(ramp($heat,reverse(tropic)),1)
           strokeColor: opacity(ramp($heat,[#DB66BC,#EB9FD4,#F7D1EB,#FFFFFF,#B7E7E8,#4ACCCF,#00AFB2]),1)
           strokeWidth: .4
-
           @county: $county
-
         `);
 
-        layer = new carto.Layer(key, source, viz);
+        const vizStart = new carto.Viz(`
+         color: opacity(ramp($heat,[#C75DAB,#D691C1,#E4C1D9,#F1F1F1,#A7D3D4,#42B7B9,#009B9E]),0)
+         strokeColor: opacity(ramp($heat,[#DB66BC,#EB9FD4,#F7D1EB,#FFFFFF,#B7E7E8,#4ACCCF,#00AFB2]),.2)
+         strokeWidth: .4
+         @county: $county
+       `);
+
+        layer = new carto.Layer(key, source, vizHeat);
 
         const interactivity = new carto.Interactivity(layer);
         interactivity.on('featureClick', checkMatching);
-        //interactivity.on('feature')
+
+      //  const delay = 20;
+        let clickedFeatureId = null;
+        interactivity.on('featureEnter', event => {
+          if (event.features.length > 0) {
+            const feature = event.features[0];
+            if (feature.id !== clickedFeatureId) {
+              feature.color.blendTo('opacity(White, 0.5)', delay)
+              feature.strokeWidth.blendTo('.4', delay);
+              feature.strokeColor.blendTo('opacity(Purple, 0.8)', delay);
+            }
+          }
+        });
+        interactivity.on('featureLeave', event => {
+          if (event.features.length > 0) {
+            const feature = event.features[0];
+            if (feature.id !== clickedFeatureId) {
+              feature.color.reset(delay);
+              feature.strokeWidth.reset(delay);
+              feature.strokeColor.reset(delay);
+            }
+          }
+        });
+        //interactivity.on('featureClick', isithot);
+
+        // interactivity.on('featureClickOut', event => {
+        //   if (event.features.length > 0) {
+        //     const feature = event.features[0];
+        //     feature.color.reset(delay);
+        //     feature.strokeWidth.reset(delay);
+        //     feature.strokeColor.reset(delay);
+        //   }
+        // });
 
         layer.addTo(map);
       }
@@ -293,9 +340,11 @@
 
         let x = document.getElementById('start');
         let y = document.getElementById('quit');
+        let z = document.getElementById('ranking');
 
         x.style.display = "none";
         y.style.display = "block";
+        z.style.display = "none";
         document.getElementById('quitDialog').value = document.getElementById('username').value
 
         loadMap(myKey);
@@ -307,57 +356,63 @@
       function quitGame(){
         let x = document.getElementById('start');
         let y = document.getElementById('quit');
+        let z = document.getElementById('ranking');
 
         x.style.display = "block";
         y.style.display = "none";
+        z.style.display = "block";
         document.getElementById('username').value=''
 
         window.location.reload();
       }
 
+
+      var mycounty;
+
       function checkMatching(event){
-console.log('in the func')
+
         let clicounty = '';
-        let mycounty = '';
 
         for (let feature of event.features) {
           clicounty = feature.variables.county.value;
         }
 
         let sqlCheck = 'SELECT county FROM hackartovl_rand WHERE key = \''+myKey+'\''
+        let sqlUpdate = 'UPDATE hackartovl_rand SET time = \''+time+'\', dur = to_timestamp(\''+time+'\', \'HH24:MI:SS\') WHERE key = \''+myKey+'\''
 
-        $.getJSON('https://'+cartouser+'.carto.com/api/v2/sql?q='+sqlCheck+'&api_key='+apiKey,function(data){
-          $.each(data.rows, function(key, val){
-            var json = JSON.parse(data);
-            //console.log(data)
-            console.log(json);
-            //console.log(data.rows[0].county)
-            // mycounty = data.county[0];
-            //console.log(row.county[0])
-          });
+        $.getJSON('https://'+cartouser+'.carto.com/api/v2/sql?format=JSON&q='+sqlCheck+'&api_key='+apiKey,function(data){
+          mycounty=data.rows[0].county;
         });
-        console.log(mycounty);
 
+        if(clicounty==mycounty){
+
+          clearTimeout(t);
+
+          for (let feature of event.features) {
+            layer.blendToViz(winViz);
+          }
+
+          let z = document.getElementById('ranking');
+          z.style.display = "block";
+
+          document.getElementById('results').innerHTML = 'That\'s Hot. You found ' + mycounty
+          $.getJSON('https://'+cartouser+'.carto.com/api/v2/sql?q='+sqlUpdate+'&api_key='+apiKey,function(data){
+          });
+
+          //interactivity.off('featureClick', checkMatching);
+          document.getElementById('quitButton').innerHTML = 'New Game'
+
+        }else{
+          document.getElementById('results').innerHTML = 'No luck, try again.' ;
+        //  isithot(false);
+
+          for (let feature of event.features) {
+            feature.color.blendTo('opacity(Purple, 0.5)', delay)
+            feature.strokeWidth.blendTo('7', delay);
+            feature.strokeColor.blendTo('opacity(LimeGreen, 0.8)', delay);
+          }
+        }
       }
-
-
-
-      // function findZone(event){
-      //         let content='';
-      //         for (let feature of event.features){
-      //           content += `
-      //           <div class="container">
-      //             <p class="bigg">Zone: ${feature.variables.locationid.value}</p>
-      //             <p class="midd">${feature.variables.zone.value}</span></p>
-      //             <p class="smalll">Latitude: ${event.coordinates.lat.toFixed(4)}</p>
-      //             <p class="smalll">Longitude: ${event.coordinates.lng.toFixed(4)}</p>
-      //           </div>
-      //         `;
-      //         }
-      //         document.getElementById('content').innerHTML = content;
-      //       }
-
-
 
       //timer elements
       var timerr = document.getElementsByTagName('timerr')[0],
@@ -366,13 +421,13 @@ console.log('in the func')
         // clear = document.getElementById('clear'),
         seconds = 0, minutes = 0, hours = 0,
         t,time='',countdown=0;
-      //
+
       function add() {
-        if (countdown<=10 && map.loaded()==false){
+        if (countdown<=5){
           countdown++;
           timer();
           timerr.textContent += (".");
-          console.log(map.loaded());
+          // console.log(map.loaded());
         }else{
           seconds++;
           if (seconds >= 60) {
@@ -387,8 +442,6 @@ console.log('in the func')
           timerr.textContent = (hours ? (hours > 9 ? hours : "0" + hours) : "00") + ":" + (minutes ? (minutes > 9 ? minutes : "0" + minutes) : "00") + ":" + (seconds > 9 ? seconds : "0" + seconds);
           time=timerr.textContent
 
-          //document.getElementById('stopwatch').innerHTML = time;
-
           timer();
         }
       }
@@ -396,17 +449,6 @@ console.log('in the func')
         t = setTimeout(add, 1000);
 
       }
-
-      // /* Stop button */
-      // stop.onclick = function() {
-      //     clearTimeout(t);
-      // }
-      //
-      // /* Clear button */
-      // clear.onclick = function() {
-      //     timerr.textContent = "00:00:00";
-      //     seconds = 0; minutes = 0; hours = 0;
-      // }
 
     </script>
 
