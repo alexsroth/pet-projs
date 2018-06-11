@@ -26,7 +26,6 @@
       body {
         background:#2C2F33;
         height:100%;
-        /* margin:20px; */
         font-family: 'Open Sans', sans-serif;
       }
       .containerr {
@@ -50,7 +49,6 @@
         margin-right:20px;
         margin-top:30px;
       }
-
       .box {
         background: #2C2F33;
         font-family: 'Open Sans', sans-serif;
@@ -61,7 +59,6 @@
         margin: 0 0 24px;
         box-shadow: 0 0px 16px rgba(0, 0, 0, 0.24);
       }
-
       aside.toolbox {
         position: absolute;
         top: 24px;
@@ -70,7 +67,6 @@
         max-width: 380px;
         z-index: 2;
       }
-
       .bigg {
         color: #FFFFFF;
         line-height: 30px;
@@ -81,15 +77,12 @@
       .grad {
         background: linear-gradient(to left, #C75DAB,#D691C1,#E4C1D9,#F1F1F1,#A7D3D4,#42B7B9,#009B9E);
       }
-
     </style>
   </head>
 
   <body>
-
     <aside class="toolbox">
       <div class="box">
-
         <form>
           <div class="form-row align-items-center">
             <div class="col-sm-1.5 my-1">
@@ -111,7 +104,7 @@
               <h2 class="card-header">That's Hot</h2>
               <div class="card-body">
                 <h5>Find the County!</h5>
-                Enter your name, Click start, and frantically try to find the "hot" county by hovering over counties, with styling as your guide to the heat. Think you found it? Click! <br><br> p.s. you're on the clock. good luck ;)
+                Enter your name, click start, and frantically try to find the "hottest" county by clicking, with styling as your guide to the heat. Think you found it? Click! <br><br> p.s. you're on the clock. good luck ;)
               </div>
 
             </div>
@@ -122,9 +115,9 @@
                 <div class="form-row align-items-center">
                   <div class="col-sm-auto my-1">
                     <div class="input-group mb-3">
-                      <input type="text" class="form-control" placeholder="your name" id="username" required>
+                      <input type="text" class="form-control" placeholder="your name" id="username" oninput="hasUsername()">
                       <div class="input-group-append">
-                        <button class="btn btn-outline-warning" type="button" onclick="startGame()">Start Game</button>
+                        <button class="btn btn-outline-warning" type="button" onclick="startGame()" id="startButton" disabled>Start Game</button>
                       </div>
                     </div>
                   </div>
@@ -150,18 +143,18 @@
                   <tbody>
                     <tr>
                       <th scope="row">1</th>
-                      <td>Alex</td>
-                      <td>00:00:22</td>
+                      <td id="rn0"></td>
+                      <td id="rt0"></td>
                     </tr>
                     <tr>
                       <th scope="row">2</th>
-                      <td>Alex</td>
-                      <td>00:00:30</td>
+                      <td id="rn1"></td>
+                      <td id="rt1"></td>
                     </tr>
                     <tr>
                       <th scope="row">3</th>
-                      <td>Alex</td>
-                      <td>00:00:57</td>
+                      <td id="rn2"></td>
+                      <td id="rt2"></td>
                     </tr>
                   </tbody>
                 </table>
@@ -220,6 +213,7 @@
 
       var cartouser='aroth-carto';
       var apiKey='ph5ha3HwevGxa7TECTzjjw';
+      getRanks();
 
       const map = new mapboxgl.Map({
         container: 'map',
@@ -243,12 +237,7 @@
       var myKey='';
       const delay = 20;
 
-      const winViz = new carto.Viz(`
-       color: opacity(ramp($heat,PinkYl),1)
-       strokeColor: opacity(ramp($heat,PinkYl),.2)
-       strokeWidth: .4
-
-     `);
+      var winViz;
 
       function loadMap(key){
          const source = new carto.source.SQL('SELECT a.*, (ST_distance(a.the_geom,b.the_geom)/c.heatlamp)*2.3 as heat FROM hackartovl_counties a, hackartovl_rand b, (select MAX(ST_distance(a.the_geom,b.the_geom)) as heatlamp from hackartovl_counties a, hackartovl_rand b) c WHERE b.cartodb_id = (select MAX(cartodb_id) from hackartovl_rand)');
@@ -267,18 +256,24 @@
          @county: $county
        `);
 
+        winViz = new carto.Viz(`
+          color: opacity(ramp($heat,PinkYl),1)
+          strokeColor: opacity(ramp($heat,PinkYl),.2)
+          strokeWidth: .4
+        `);
+
         layer = new carto.Layer(key, source, vizHeat);
 
         const interactivity = new carto.Interactivity(layer);
         interactivity.on('featureClick', checkMatching);
 
-      //  const delay = 20;
+        //  const delay = 20;
         let clickedFeatureId = null;
         interactivity.on('featureEnter', event => {
           if (event.features.length > 0) {
             const feature = event.features[0];
             if (feature.id !== clickedFeatureId) {
-              feature.color.blendTo('opacity(White, 0.5)', delay)
+              feature.color.blendTo('opacity(ramp($heat,reverse(tropic)),1)', 700)
               feature.strokeWidth.blendTo('.4', delay);
               feature.strokeColor.blendTo('opacity(Purple, 0.8)', delay);
             }
@@ -308,7 +303,6 @@
         layer.addTo(map);
       }
 
-
       //for a random float
       function randFloat(min, max, decimalPlaces) {
         var rand = Math.random()*(max-min) + min;
@@ -321,8 +315,19 @@
         return Math.floor(Math.random() * (max - min + 1)) + min;
       }
 
+      function hasUsername(){
 
-      // Extent: (-124.848974, 24.396308) - (-66.885444, 49.384358)
+        var sbut = document.getElementById('startButton');
+        var uname = document.getElementById('username');
+        var input = uname.value.length;
+
+        if(input<2){
+          sbut.disabled = true;
+        }else{
+          sbut.disabled = false;
+        }
+      }
+
       function startGame(){
 
         // step one: get random coords
@@ -350,6 +355,7 @@
         loadMap(myKey);
 
         timer();
+        console.log('username is: '+document.getElementById('username').value)
 
       }
 
@@ -366,8 +372,8 @@
         window.location.reload();
       }
 
-
       var mycounty;
+      var mystate;
 
       function checkMatching(event){
 
@@ -377,16 +383,18 @@
           clicounty = feature.variables.county.value;
         }
 
-        let sqlCheck = 'SELECT county FROM hackartovl_rand WHERE key = \''+myKey+'\''
+        let sqlCheck = 'SELECT county, state FROM hackartovl_rand WHERE key = \''+myKey+'\''
         let sqlUpdate = 'UPDATE hackartovl_rand SET time = \''+time+'\', dur = to_timestamp(\''+time+'\', \'HH24:MI:SS\') WHERE key = \''+myKey+'\''
 
         $.getJSON('https://'+cartouser+'.carto.com/api/v2/sql?format=JSON&q='+sqlCheck+'&api_key='+apiKey,function(data){
           mycounty=data.rows[0].county;
+          mystate=data.rows[0].state;
         });
 
         if(clicounty==mycounty){
 
           clearTimeout(t);
+          getRanks();
 
           for (let feature of event.features) {
             layer.blendToViz(winViz);
@@ -395,7 +403,7 @@
           let z = document.getElementById('ranking');
           z.style.display = "block";
 
-          document.getElementById('results').innerHTML = 'That\'s Hot. You found ' + mycounty
+          document.getElementById('results').innerHTML = 'That\'s Hot. You found ' + mycounty+', '+mystate
           $.getJSON('https://'+cartouser+'.carto.com/api/v2/sql?q='+sqlUpdate+'&api_key='+apiKey,function(data){
           });
 
@@ -408,10 +416,36 @@
 
           for (let feature of event.features) {
             feature.color.blendTo('opacity(Purple, 0.5)', delay)
-            feature.strokeWidth.blendTo('7', delay);
+            feature.strokeWidth.blendTo('3', delay);
             feature.strokeColor.blendTo('opacity(LimeGreen, 0.8)', delay);
           }
         }
+      }
+
+      var rn1;
+      var rt1;
+      var rn2;
+      var rt2;
+      var rn0;
+      var rt0;
+
+      function getRanks(){
+        let sqlRank='SELECT * FROM hackartovl_rand where not name = \'\' order by dur asc limit 5'
+        $.getJSON('https://'+cartouser+'.carto.com/api/v2/sql?format=JSON&q='+sqlRank+'&api_key='+apiKey,function(data){
+          rn0=data.rows[0].name;
+          rt0=data.rows[0].time;
+          rn1=data.rows[1].name;
+          rt1=data.rows[1].time;
+          rn2=data.rows[2].name;
+          rt2=data.rows[2].time;
+
+          document.getElementById('rn0').innerHTML=rn0
+          document.getElementById('rt0').innerHTML=rt0
+          document.getElementById('rn1').innerHTML=rn1
+          document.getElementById('rt1').innerHTML=rt1
+          document.getElementById('rn2').innerHTML=rn2
+          document.getElementById('rt2').innerHTML=rt2
+        });
       }
 
       //timer elements
@@ -438,20 +472,14 @@
                   hours++;
               }
           }
-
           timerr.textContent = (hours ? (hours > 9 ? hours : "0" + hours) : "00") + ":" + (minutes ? (minutes > 9 ? minutes : "0" + minutes) : "00") + ":" + (seconds > 9 ? seconds : "0" + seconds);
           time=timerr.textContent
-
           timer();
         }
       }
       function timer() {
         t = setTimeout(add, 1000);
-
       }
-
     </script>
-
   </body>
-
 </html>
