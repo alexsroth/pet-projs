@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Volcano Eruptions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <!-- Include CARTO VL JS -->
+  <script src="http://libs.cartocdn.com/carto-vl/v0.5.0-beta/carto-vl.js"></script>
+  <!-- Include Mapbox GL JS -->
+  <script src="https://libs.cartocdn.com/mapbox-gl/v0.45.0-carto1/mapbox-gl.js"></script>
+  <!-- Include Mapbox GL CSS -->
+  <link href="https://libs.cartocdn.com/mapbox-gl/v0.45.0-carto1/mapbox-gl.css" rel="stylesheet" />
+  <link href="https://carto.com/developers/carto-vl/examples/maps/style.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+</head>
+<body>
+  <div id="map"></div>
+  <aside class="toolbox">
+    <div class="box">
+      <header>
+        <h1>Volcanoes and eruptions</h1>
+      </header>
+      <section>
+        <p class="description open-sans"> This map shows more than 12,000 volcanoes and 11,000 eruptions — dating from 1950 to the present year. The map gathers evidence of the latest eruption activity and population within 10.000 km distance range. </p>
+        <p class="description open-sans">The map leverages the vector technology of CARTO VL to modify the styling properties on the client side.</p>
+        <p class="description open-sans">The size represents the VEI (Volcanic Explosivity Index) while the color represents the total number of affected population.</p>
+        <p class="description open-sans"><strong>Width</strong></p>
+        <div id="veiWidth"></div>
+        <p class="description open-sans"><strong>Stroke Width</strong></p>
+        <div id="veiStrokeWidth"></div>
+        <p class="description open-sans"><strong>Duration</strong></p>
+        <div id="duration"></div>
+
+    </div>
+  </aside>
+  <script>
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+      center: [-32.97, 29.78],
+      zoom: 2,
+      scrollZoom: false,
+      dragRotate: false,
+      touchZoomRotate: false,
+    });
+
+    // Define user
+    carto.setDefaultAuth({
+      user: 'arianaescobar',
+      apiKey: 'default_public'
+    });
+
+
+
+
+
+    // Define layer
+    const volcanoSource = new carto.source.Dataset('gvp_volcano_eruptions');
+    const volcanoViz = new carto.Viz(`
+      @veiWidthDen: 10
+      @veiStrokeWidthDen: 2
+      @duration: 5
+      width: $right_vei*@veiWidthDen*zoom()
+      color: opacity(#0e0e0e,0)
+      strokeColor: opacity(ramp(linear($pop10k,5000,100000), reverse(redor)),$pop10k/30000)
+      strokeWidth: $right_vei/@veiStrokeWidthDen*zoom()
+      filter: torque(linear($right_start_year,1950,2018),@duration,fade(0.4,0.4))`);
+
+    const volcanoLayer = new carto.Layer('volcanoLayer', volcanoSource, volcanoViz);
+
+
+    const volcanoSource2 = new carto.source.Dataset('gvp_volcano_eruptions');
+    const volcanoViz2 = new carto.Viz(`
+      width: ($elevation/3000)*zoom()
+      color: white
+      strokeWidth: 0
+      `);
+    const volcanoLayer2 = new carto.Layer('volcanoLayer2', volcanoSource2, volcanoViz2);
+
+    volcanoLayer.addTo(map, 'watername_ocean');
+    volcanoLayer2.addTo(map, 'volcanoLayer');
+
+    // Define sliders
+
+    $( "#veiWidth" ).slider({
+        min: 1,
+        max: 30,
+        value: volcanoViz.variables.veiWidthDen.value,
+        change: function( event, ui ) {
+          volcanoViz.variables.veiWidthDen.blendTo(ui.value)
+        },
+        animate: "slow"
+    });
+    $( "#veiStrokeWidth" ).slider({
+        min: 1,
+        max: 10,
+        value: volcanoViz.variables.veiStrokeWidthDen.value ,
+        change: function( event, ui ) {
+          volcanoViz.variables.veiStrokeWidthDen.blendTo(ui.value)
+        },
+        animate: "slow"
+    });
+
+    $( "#duration" ).slider({
+        min: 0,
+        max: 10,
+        value: volcanoViz.variables.duration.value ,
+        change: function( event, ui ) {
+          volcanoViz.variables.duration.blendTo(ui.value)
+        },
+        animate: "slow"
+    });
+
+
+  </script>
+</body>
+</html>
