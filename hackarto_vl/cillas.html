@@ -46,17 +46,11 @@
       dragRotate: false,
       touchZoomRotate: false,
     });
-
     // Define user
     carto.setDefaultAuth({
       user: 'arianaescobar',
       apiKey: 'default_public'
     });
-
-
-
-
-
     // Define layer
     const volcanoSource = new carto.source.Dataset('gvp_volcano_eruptions');
     const volcanoViz = new carto.Viz(`
@@ -68,10 +62,7 @@
       strokeColor: opacity(ramp(linear($pop10k,5000,100000), reverse(redor)),$pop10k/30000)
       strokeWidth: $right_vei/@veiStrokeWidthDen*zoom()
       filter: torque(linear($right_start_year,1950,2018),@duration,fade(0.4,0.4))`);
-
     const volcanoLayer = new carto.Layer('volcanoLayer', volcanoSource, volcanoViz);
-
-
     const volcanoSource2 = new carto.source.Dataset('gvp_volcano_eruptions');
     const volcanoViz2 = new carto.Viz(`
       width: ($elevation/3000)*zoom()
@@ -79,12 +70,9 @@
       strokeWidth: 0
       `);
     const volcanoLayer2 = new carto.Layer('volcanoLayer2', volcanoSource2, volcanoViz2);
-
     volcanoLayer.addTo(map, 'watername_ocean');
     volcanoLayer2.addTo(map, 'volcanoLayer');
-
     // Define sliders
-
     $( "#veiWidth" ).slider({
         min: 1,
         max: 30,
@@ -103,7 +91,6 @@
         },
         animate: "slow"
     });
-
     $( "#duration" ).slider({
         min: 0,
         max: 10,
@@ -113,7 +100,6 @@
         },
         animate: "slow"
     });
-
 
   </script>
 </body>
