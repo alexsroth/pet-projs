@@ -3,25 +3,27 @@ Server set up not included in this install process. For this install we will use
 
 `centos@onprem-install.westeurope.cloudapp.azure.com`
 ## prerequisites
-For this process, you will need to have 4 links, provided by CARTO, available to you.
-### links
-builder [installer_url]
-```
+For this process, you will need to have 4 links, provided by CARTO, available to you. (these links are generated in [jenkins](http://deploy.int.cartodb.net/view/Sales/job/Omnibus-download-link/build?delay=0sec) (must VM in))
+### links:
+#### installers
+##### builder [installer_url] `this is an expired example link, use a valid one`
+***
 https://s3.amazonaws.com/com.carto.onpremises.release/2.2.0/carto-builder-2.2.0-rhel-6-x86_64.tar.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAJMLX2VFGMQPJKPAQ%2F20180613%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20180613T102257Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=c936c573cf30a9f51475229d40be12de5ccbb09edc18cb1429b3621618f31341
-```
-#### LDS [installer_url]
-```
+***
+
+##### LDS [installer_url] `this is an expired example link, use a valid one`
+***
 https://s3.amazonaws.com/com.carto.onpremises.release/1.1.0/carto-dataservices-1.1.0-rhel-6-x86_64.tar.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAJMLX2VFGMQPJKPAQ%2F20180613%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20180613T102308Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=077bf044dcc329a39261d6b22a3e819d84aa9a5d9c543f3aa34872352224e3d2
-```
+***
 #### data dumps:
-##### [geocoder_url]
-```
+##### [geocoder_url] `this is an expired example link, use a valid one`
+***
 https://s3.amazonaws.com/data.cartodb.net/geocoding/dumps/geocoder-0.0.1.tar.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAISZDD2JNL6KXA3QA%2F20180613%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20180613T102927Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=1a93afc3a0e31807d67b0ce1f0abdfe070af76d1a8c1e554689e4ec7ada32b73
-```
-##### [observatory_url]
-```
+***
+##### [observatory_url] `this is an expired example link, use a valid one`
+***
 https://cartodb-observatory-data.s3.amazonaws.com/do-release-2017_11_29_dac4af93bd/obs.dump?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIG4M35F3TZJL2EBA%2F20180613%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20180613T102927Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=172162caeb651c8678072aa0a755f76f97e4da0c2a4f1e144dfc0ba2e1a5f59e
-```
+***
 ## getting started
 First, you will want to access your server, if you are not already. Our server is called `onprem-install`
 
@@ -182,11 +184,20 @@ to enter and edit any of this information, you can use nano:
 $ nano carto-builder.config
 ```
 
-switch to the root, and install gcc if you don't already have it:
+switch to the root, and ***install gcc if you don't already have it***:
 
 ```console
 $ sudo su
 # yum install gcc
+```
+
+**possible problem:** You may run into a warning about limited memory that could stop your install process. If this happens, you will need to edit the `/product/builder.hw_reqs` and lower the requirements.
+
+**current known error:** in product/, there is a file named `builder.NEWS.md` that needs to be named `builder.NEWS` instead.
+
+**fix:**
+```console
+# mv product/builder.NEWS.md product/builder.NEWS
 ```
 
 run the installer:
@@ -214,9 +225,118 @@ Do you want to continue?' (Y/n): Y
 
 This will start the install process.
 
-**current known error:** in product/, there is a file named `builder.NEWS.md` that needs to be named `builder.NEWS` instead.
+Once installed, we will install the location data services. Go back to the home directory, then use cURL to download, followed by unzipping the folder, then navigating to it
+
+```console
+$ cd
+$ curl -o carto-lds-1.1.tar.gz "https://s3.amazonaws.com/com.carto.onpremises.release/1.1.0/carto-dataservices-1.1.0-rhel-6-x86_64.tar.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAJMLX2VFGMQPJKPAQ%2F20180613%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20180613T102308Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=077bf044dcc329a39261d6b22a3e819d84aa9a5d9c543f3aa34872352224e3d2"
+$ tar xfvz carto-lds-1.1.tar.gz
+$ cd carto-dataservices-1.1.0-rhel-6-x86_64/
+```
+
+look into the config file to see what you can change here:
+
+```console
+$ cat carto-dataservices.config
+CARTO_VERSION="1.1.0"
+
+CARTO_CLIENT_BUILD="carto"
+
+# We will define data and snapshot paths from these two
+CARTO_DATA_ROOT_PATH="/data"
+CARTO_SNAPSHOT_ROOT_PATH="/data"
+
+CARTO_LOG_PATH="/data/log"
+CARTO_BACKUP_PATH="/backup"
+
+#=====================================
+## Dataservices
+#=====================================
+# Allowed IP Configuration (CARTO_XXXX_ADDRESS):        | "127.0.0.1" | "192.168.1.64" | "sql-api.carto.com" |
+# Allowed BIND IP Configuration (CARTO_XXXX_BIND): | "127.0.0.1" | "192.168.1.64" | "0.0.0.0"           |
+# NOTE: Make sure you configure properly both ADDRESS and BIND vars to have a consistent configuration.
+
+CARTO_DATASERVICES_BIND="127.0.0.1"
+CARTO_DATASERVICES_PORT="5433"
+CARTO_DATASERVICES_USER="geocoder_api"
+CARTO_DATASERVICES_DB="db_dataservices"
+
+CARTO_DS_GEOCODER_LOG_PATH="$CARTO_LOG_PATH/dataservices/geocoder.log"
+CARTO_DS_ROUTING_LOG_PATH="$CARTO_LOG_PATH/dataservices/routing.log"
+CARTO_DS_ISOLINES_LOG_PATH="$CARTO_LOG_PATH/dataservices/isolines.log"
+CARTO_DS_DO_LOG_PATH="$CARTO_LOG_PATH/dataservices/data_observatory.log"
+CARTO_DS_MIN_LOG_LEVEL="info"
+CARTO_DS_LOG_FILE_PATH="$CARTO_LOG_PATH/dataservices/dataservices.log"
+
+#=====================================
+## Monit
+#=====================================
+CARTO_MONIT=true
+
+#=====================================
+## Builder
+#=====================================
+
+CARTO_REDIS_ADDRESS="127.0.0.1"
+CARTO_REDIS_PORT="6379"
+```
+
+You will need to set `CARTO_MONIT` here to false
+
+**current known error:** in product/, there is a file named `dataservices.NEWS.md` that needs to be named `dataservices.NEWS` instead.
 
 **fix:**
 ```console
-# cp product/builder.NEWS.md product/builder.NEWS
+# mv product/dataservices.NEWS.md product/dataservices.NEWS
 ```
+**if you ran the installer without fixing this first:** the installer would have made a postgres database, and upon running the installer a second time, you may see this:
+```console
+[2018-06-19 14:21:41] Running: /opt/carto/dataservices/embedded/bin/psql -U postgres -p 5433 -c 'CREATE DATABASE db_dataservices;'
+[2018-06-19 14:21:41] Output: ERROR:  database "db_dataservices" already exists
+```
+to remedey this, you will need to drop the database before trying to install again. to be extra safe, once installed, we will uninstall the LDS and install it once more.
+```console
+# /opt/carto/dataservices/embedded/bin/psql -U postgres -p 5433 -c 'DROP DATABASE db_dataservices;'
+# ./carto-setup.sh dataservices
+# carto-dataservices-uninstall.sh
+# ./carto-setup.sh dataservices
+```
+return to `/data` to download the geocoder and observatory data:
+```console
+# cd /data
+```
+```console
+# curl -o geocoder-0.0.1.tar.gz "https://s3.amazonaws.com/data.cartodb.net/geocoding/dumps/geocoder-0.0.1.tar.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAISZDD2JNL6KXA3QA%2F20180613%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20180613T102927Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=1a93afc3a0e31807d67b0ce1f0abdfe070af76d1a8c1e554689e4ec7ada32b73"
+# tar xfvz geocoder-0.0.1.tar.gz
+# mv 0.0.1 db_dumps
+```
+```console
+# curl -o obs.dump "https://cartodb-observatory-data.s3.amazonaws.com/do-release-2017_11_29_dac4af93bd/obs.dump?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIG4M35F3TZJL2EBA%2F20180613%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20180613T102927Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=172162caeb651c8678072aa0a755f76f97e4da0c2a4f1e144dfc0ba2e1a5f59e"
+# mv obs.dump obs_2017_11_29_dac4af93bd.dump
+```
+Load the data:
+```console
+# carto-dataservices-geocoder.sh load-data db_dumps
+```
+```console
+# carto-dataservices-observatory.sh load-data obs_2017_11_29_dac4af93bd.dump
+```
+**To Access the resolvable URL in the browser, you will need to use https://**
+
+If you need to update ssl certs:
+
+``` console
+# vi /data/production/config/builder/config/app_config.yml
+:%s/{old_URL}/{new_URL}/g
+:wq
+```
+you will need to manually replace the old subdomain with the new one in all these:
+``` console
+# nano /data/production/config/sql-api/production.js
+# nano /data/production/config/windshaft/production.js
+# nano /data/production/config/nginx/sites-enabled/carto.conf
+# nano /data/production/config/nginx/sites-enabled/carto-ssl.conf
+# nano /etc/carto-builder.config
+```
+
+Can use this tool to upload ssl certificates: https://transfer.sh/
