@@ -1,4 +1,4 @@
-# installing onprem
+# installing onprem 2.2.0
 Server set up not included in this install process. For this install we will use the following server:
 
 `centos@onprem-install.westeurope.cloudapp.azure.com`
@@ -193,12 +193,14 @@ $ sudo su
 
 **possible problem:** You may run into a warning about limited memory that could stop your install process. If this happens, you will need to edit the `/product/builder.hw_reqs` and lower the requirements.
 
-**current known error:** in product/, there is a file named `builder.NEWS.md` that needs to be named `builder.NEWS` instead.
+####`this issue has been fixed in 2.2.1`
+>**current known error:** in product/, there is a file named `builder.NEWS.md` that needs to be named `builder.NEWS` instead.
+>
+>**fix:**
+>```console
+># mv product/builder.NEWS.md product/builder.NEWS
+>```
 
-**fix:**
-```console
-# mv product/builder.NEWS.md product/builder.NEWS
-```
 
 run the installer:
 
@@ -283,12 +285,14 @@ CARTO_REDIS_PORT="6379"
 
 You will need to set `CARTO_MONIT` here to false
 
-**current known error:** in product/, there is a file named `dataservices.NEWS.md` that needs to be named `dataservices.NEWS` instead.
+####`this issue has been fixed in 2.2.1`
+>**current known error:** in product/, there is a file named `dataservices.NEWS.md` that needs to be named `dataservices.NEWS` instead.
+>
+>**fix:**
+>```console
+># mv product/dataservices.NEWS.md product/dataservices.NEWS
+>```
 
-**fix:**
-```console
-# mv product/dataservices.NEWS.md product/dataservices.NEWS
-```
 **if you ran the installer without fixing this first:** the installer would have made a postgres database, and upon running the installer a second time, you may see this:
 ```console
 [2018-06-19 14:21:41] Running: /opt/carto/dataservices/embedded/bin/psql -U postgres -p 5433 -c 'CREATE DATABASE db_dataservices;'
@@ -340,3 +344,39 @@ you will need to manually replace the old subdomain with the new one in all thes
 ```
 
 Can use this tool to upload ssl certificates: https://transfer.sh/
+
+### Mounting new disk to server
+
+- attach a volume to your server from azure portal (an operation from their side that they should know how to do)
+
+- create a partition in the empty drive
+``` console
+$ sudo su
+# fdisk -l #lists all devices for disks attached to Server
+# fdisk /dev/sdf # use whatever the disk is, starts an interactive prompt:
+# n # new partition, will ask for number, which is the number assigned to it, not how many partitions there are
+# #will ask for start and end sectors of the partition, default values will fill the whole disk.
+# w # write partition
+# fdisk -l # you will see sdf1
+```
+- create a file system in the partition (so the OS can find files in disk)
+``` console
+# mkfs.ext4 /dev/sdf1 # make file system as ext4, a linux specific file system in my partition
+```
+- mount the new partition into a mounting point
+``` console
+# mount /dev/sdf1 /data # mounts the partiton in the /data directory
+```
+- persist changes to the server
+``` console
+# nano /etc/fstab # add a new line with the partition, where to mount(mounting point), the file system, 'defaults  0  0'
+```
+### screen
+you can use screen to ensure you don't quit out of a
+``` console
+# yum install screen
+# screen
+```
+- to detatch: crtl+a (release) d
+- list screens: screen -ls
+- to resume: screen -r 
